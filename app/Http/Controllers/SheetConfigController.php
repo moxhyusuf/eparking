@@ -18,7 +18,7 @@ class SheetConfigController extends Controller
     {
         $request->validate([
             'spreadsheet_id' => 'required|string',
-            'gid'            => 'required|string|unique:config,gid',
+            'gid'            => 'required|string|unique:sheet_config,gid',
             'bulan'          => 'required|integer|between:1,12',
             'tahun'          => 'required|integer|min:2020',
         ]);
@@ -32,7 +32,7 @@ class SheetConfigController extends Controller
     {
         $request->validate([
             'spreadsheet_id' => 'required|string',
-            'gid'            => 'required|string|unique:config,gid,' . $config->id,
+            'gid'            => 'required|string|unique:sheet_config,gid,' . $config->id,
             'bulan'          => 'required|integer|between:1,12',
             'tahun'          => 'required|integer|min:2020',
         ]);
