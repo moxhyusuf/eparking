@@ -39,7 +39,7 @@
                 </div>
                 <div class="auth-footer row">
                     <div class="col my-1">
-                        <p class="m-0 text-muted">Copyright © {{ date('Y') }} E-Parking</p>
+                        <p class="m-0 text-muted">Copyright © {{ date('Y') }} E-Parkir dinas perhubungan kota Probolinggo</p>
                     </div>
                 </div>
             </div>

@@ -33,7 +33,18 @@
 
                             {{-- Filter --}}
                             <div class="row mb-3 g-2 align-items-end">
-                                <div class="col-md-3">
+                                <div class="col-md-2">
+                                    <label class="form-label mb-1 fw-semibold">Bulan</label>
+                                    <select id="filterBulan" class="form-select select2">
+                                        <option value="">Semua Bulan</option>
+                                        @foreach ($bulanTersedia as $item)
+                                            <option value="{{ $item['value'] }}|{{ $item['tahun'] }}">
+                                                {{ $item['label'] }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
                                     <label class="form-label mb-1 fw-semibold">Koordinator</label>
                                     <select id="filterKoordinator" class="form-select select2">
                                         <option value="">Semua Koordinator</option>
@@ -42,7 +53,7 @@
                                         @endforeach
                                     </select>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <label class="form-label mb-1 fw-semibold">Sub Koordinator</label>
                                     <select id="filterSubKoordinator" class="form-select select2">
                                         <option value="">Semua Sub Koordinator</option>
@@ -74,6 +85,7 @@
                                             <th>Koordinator</th>
                                             <th>Sub Koordinator</th>
                                             <th>Lokasi</th>
+                                            <th class="d-none">BulanTahun</th>
                                             <th>Aksi</th>
                                         </tr>
                                     </thead>
@@ -85,8 +97,9 @@
                                                 <td>{{ $jukir->koordinator_wasda }}</td>
                                                 <td>{{ $jukir->sub_koordinator_wasda }}</td>
                                                 <td>{{ $jukir->lokasi }}</td>
+                                                <td class="d-none">{{ $jukir->bulan }}|{{ $jukir->tahun }}</td>
                                                 <td>
-                                                    <a href="{{ route('monitoring.detail', $jukir->id) }}" class="btn btn-info btn-sm text-white">
+                                                    <a href="{{ route('monitoring.show', $jukir->id) }}" class="btn btn-info btn-sm text-white">
                                                         <i class="ti ti-eye"></i> Detail
                                                     </a>
                                                 </td>
@@ -115,9 +128,14 @@
                     url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/id.json'
                 },
                 columnDefs: [{
-                    orderable: false,
-                    targets: 5
-                }]
+                        orderable: false,
+                        targets: 6
+                    },
+                    {
+                        visible: false,
+                        targets: 5
+                    }
+                ]
             });
 
             $('.select2').select2({
@@ -126,11 +144,16 @@
                 width: '100%'
             });
 
+            // Ambil value option pertama (bulan terbaru/pertama yang ada di data)
+            const defaultBulan = $('#filterBulan option:not([value=""])').first().val();
+
             $.fn.dataTable.ext.search.push(function(settings, data) {
+                const bulan = $('#filterBulan').val();
                 const koordinator = $('#filterKoordinator').val();
                 const sub = $('#filterSubKoordinator').val();
                 const lokasi = $('#filterLokasi').val();
 
+                if (bulan && data[5] !== bulan) return false;
                 if (koordinator && data[2] !== koordinator) return false;
                 if (sub && data[3] !== sub) return false;
                 if (lokasi && data[4] !== lokasi) return false;
@@ -138,12 +161,16 @@
                 return true;
             });
 
-            $('#filterKoordinator, #filterSubKoordinator, #filterLokasi').on('change', function() {
+            $('#filterBulan, #filterKoordinator, #filterSubKoordinator, #filterLokasi').on('change', function() {
                 table.draw();
             });
 
+            // Set default bulan ke option pertama lalu trigger filter
+            $('#filterBulan').val(defaultBulan).trigger('change');
+
             $('#btnReset').on('click', function() {
                 $('#filterKoordinator, #filterSubKoordinator, #filterLokasi').val(null).trigger('change');
+                $('#filterBulan').val(defaultBulan).trigger('change');
             });
         });
     </script>

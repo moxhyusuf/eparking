@@ -12,55 +12,51 @@ class MonitoringController extends Controller
     public function index(Request $request)
     {
         if (Auth::user()->role === 'jukir') {
-            return $this->show($request);
+            $jukir = Jukir::where('no_absen', Auth::user()->absen)->firstOrFail();
+            return redirect()->route('monitoring.show', $jukir->id);
         }
 
         $jukirs = Jukir::orderBy('id')->get();
-        return view('monitoring.index', compact('jukirs'));
+
+        $bulanTersedia = Jukir::selectRaw('DISTINCT bulan, tahun')
+            ->orderBy('tahun')
+            ->orderBy('bulan')
+            ->get()
+            ->map(fn($j) => [
+                'value' => $j->bulan,
+                'label' => \Carbon\Carbon::createFromDate($j->tahun, $j->bulan, 1)->translatedFormat('F Y'),
+                'tahun' => $j->tahun,
+            ]);
+
+        return view('monitoring.index', compact('jukirs', 'bulanTersedia'));
     }
 
-
-    public function show(Request $request)
+    public function show(Request $request, $id)
     {
-        $jukir = Jukir::where('no_absen', Auth::user()->absen)->firstOrFail();
-
-        $bulan = $request->bulan ?? '2026-07';
-        [$tahun, $bln] = explode('-', $bulan);
-
-        $setorans = Setoran::where('jukir_id', $jukir->id)
-            ->whereYear('tanggal', $tahun)
-            ->whereMonth('tanggal', $bln)
-            ->orderBy('tanggal')
-            ->get();
-
-        $totalR2 = $setorans->sum('r2');
-        $totalR4 = $setorans->sum('r4');
-
-
-        return view('monitoring.detail', compact('jukir', 'setorans', 'bulan', 'totalR2', 'totalR4'));
-    }
-
-    public function detail(Request $request, $id)
-    {
-
+        // Jukir hanya boleh lihat data diri sendiri
         if (Auth::user()->role === 'jukir') {
-            return redirect()->route('monitoring.index');
+            $jukir = Jukir::where('no_absen', Auth::user()->absen)->firstOrFail();
+            if ($jukir->id != $id) {
+                return redirect()->route('monitoring.show', $jukir->id);
+            }
         }
 
         $jukir = Jukir::findOrFail($id);
 
-        $bulan = $request->bulan ?? '2026-07';
-        [$tahun, $bln] = explode('-', $bulan);
-
         $setorans = Setoran::where('jukir_id', $id)
-            ->whereYear('tanggal', $tahun)
-            ->whereMonth('tanggal', $bln)
             ->orderBy('tanggal')
             ->get();
 
-        $totalR2 = $setorans->sum('r2');
-        $totalR4 = $setorans->sum('r4');
+        $totalR2         = $setorans->sum('r2');
+        $totalR4         = $setorans->sum('r4');
+        $totalPendapatan = $totalR2 + $totalR4;
 
-        return view('monitoring.detail', compact('jukir', 'setorans', 'bulan', 'totalR2', 'totalR4'));
+        return view('monitoring.show', compact(
+            'jukir',
+            'setorans',
+            'totalR2',
+            'totalR4',
+            'totalPendapatan'
+        ));
     }
 }

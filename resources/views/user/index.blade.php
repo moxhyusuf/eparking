@@ -11,18 +11,45 @@
         <div class="pc-content">
             <div class="page-header">
                 <div class="page-block">
-                    <div class="row align-items-center">
-                        <div class="col-md-12">
-                            <div class="page-header-title">
-                                <h2 class="mb-0">Kelola User</h2>
-                            </div>
-                        </div>
-                    </div>
+                    <h2 class="mb-0">Kelola User</h2>
                 </div>
             </div>
 
+            @if (session('success'))
+                <div class="alert alert-success alert-dismissible fade show">
+                    {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+            @if ($errors->any())
+                <div class="alert alert-danger alert-dismissible fade show">
+                    {{ $errors->first() }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+
+            {{-- Filter bulan/tahun --}}
+            <form method="GET" class="row g-2 mb-3">
+                <div class="col-auto">
+                    <select name="bulan" class="form-select form-select-sm">
+                        @foreach (range(1, 12) as $b)
+                            <option value="{{ $b }}" @selected($b == $bulan)>
+                                {{ DateTime::createFromFormat('!m', $b)->format('F') }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <input type="number" name="tahun" value="{{ $tahun }}" class="form-control form-control-sm" style="width:90px">
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-sm btn-secondary">Filter</button>
+                </div>
+            </form>
+
             <div class="row">
-                <div class="col-sm-12">
+                {{-- Kiri: Daftar User --}}
+                <div class="col-lg-7">
                     <div class="card">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">Daftar User</h5>
@@ -31,30 +58,16 @@
                             </button>
                         </div>
                         <div class="card-body">
-
-                            @if (session('success'))
-                                <div class="alert alert-success alert-dismissible fade show">
-                                    {{ session('success') }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                </div>
-                            @endif
-
-                            @if ($errors->any())
-                                <div class="alert alert-danger alert-dismissible fade show">
-                                    {{ $errors->first() }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                </div>
-                            @endif
-
                             <div class="table-responsive">
                                 <table id="tabelUser" class="table table-hover table-bordered align-middle w-100">
-                                    <thead class="">
+                                    <thead>
                                         <tr>
                                             <th>No</th>
                                             <th>Nama</th>
                                             <th>No. Absen</th>
                                             <th>Username</th>
                                             <th>Role</th>
+                                            <th>Jukir Assigned</th>
                                             <th>Aksi</th>
                                         </tr>
                                     </thead>
@@ -71,14 +84,27 @@
                                                     </span>
                                                 </td>
                                                 <td>
+                                                    @if ($user->jukirs->isNotEmpty())
+                                                        @foreach ($user->jukirs as $j)
+                                                            <span class="badge bg-light text-dark border me-1">
+                                                                {{ $j->no_absen }} — {{ $j->nama }}
+                                                                <a href="#" class="text-danger ms-1" onclick="event.preventDefault(); document.getElementById('detach-{{ $j->id }}').submit();" title="Cabut">×</a>
+                                                                <form id="detach-{{ $j->id }}" action="{{ route('user.detach', $j) }}" method="POST" class="d-none">
+                                                                    @csrf @method('DELETE')
+                                                                </form>
+                                                            </span>
+                                                        @endforeach
+                                                    @else
+                                                        <span class="text-muted small">—</span>
+                                                    @endif
+                                                </td>
+                                                <td>
                                                     <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalEdit" data-id="{{ $user->id }}" data-nama="{{ $user->nama }}" data-absen="{{ $user->absen }}" data-username="{{ $user->username }}" data-role="{{ $user->role }}">
-                                                        <i class="ti ti-pencil"></i> Edit
+                                                        <i class="ti ti-pencil"></i>
                                                     </button>
                                                     <form action="{{ route('user.destroy', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus user {{ $user->nama }}?')">
                                                         @csrf @method('DELETE')
-                                                        <button class="btn btn-danger btn-sm">
-                                                            <i class="ti ti-trash"></i> Hapus
-                                                        </button>
+                                                        <button class="btn btn-danger btn-sm"><i class="ti ti-trash"></i></button>
                                                     </form>
                                                 </td>
                                             </tr>
@@ -86,6 +112,48 @@
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Kanan: Assign Jukir --}}
+                <div class="col-lg-5">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Jukir Belum Di-assign</h5>
+                        </div>
+                        <div class="card-body">
+                            @if ($unmapped->isEmpty())
+                                <p class="text-muted small">Semua jukir sudah di-assign.</p>
+                            @else
+                                <form action="{{ route('user.assign') }}" method="POST">
+                                    @csrf
+                                    <div class="mb-3">
+                                        <label class="form-label">Assign ke User</label>
+                                        <select name="user_id" class="form-select form-select-sm" required>
+                                            <option value="">— Pilih User —</option>
+                                            @foreach ($users as $u)
+                                                <option value="{{ $u->id }}">{{ $u->nama }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Pilih Jukir</label>
+                                        <div style="max-height:300px;overflow-y:auto" class="border rounded p-2">
+                                            @foreach ($unmapped as $j)
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="jukir_ids[]" value="{{ $j->id }}" id="jk{{ $j->id }}">
+                                                    <label class="form-check-label small" for="jk{{ $j->id }}">
+                                                        {{ $j->no_absen }} — {{ $j->nama }}
+                                                        <span class="text-muted">({{ $j->lokasi }})</span>
+                                                    </label>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-primary btn-sm w-100">Assign</button>
+                                </form>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -193,14 +261,13 @@
             },
             columnDefs: [{
                 orderable: false,
-                targets: 5
+                targets: [5, 6]
             }]
         });
 
         document.getElementById('modalEdit').addEventListener('show.bs.modal', function(e) {
             const btn = e.relatedTarget;
             const form = document.getElementById('formEdit');
-
             form.action = `/user/${btn.dataset.id}`;
             document.getElementById('edit_nama').value = btn.dataset.nama;
             document.getElementById('edit_absen').value = btn.dataset.absen;

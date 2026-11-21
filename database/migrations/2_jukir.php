@@ -10,11 +10,14 @@ return new class extends Migration
     {
         Schema::create('jukir', function (Blueprint $table) {
             $table->id();
-            $table->string('no_absen')->unique();
+            $table->foreignId('user_id')->nullable()->constrained('user');
+            $table->string('no_absen');
             $table->string('nama');
             $table->string('koordinator_wasda');
             $table->string('sub_koordinator_wasda');
             $table->string('lokasi');
+            $table->integer('tahun');
+            $table->integer('bulan');
             $table->timestamps();
         });
     }

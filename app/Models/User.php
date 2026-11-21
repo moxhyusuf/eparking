@@ -19,4 +19,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function jukirs()
+    {
+        return $this->hasMany(Jukir::class);
+    }
 }
