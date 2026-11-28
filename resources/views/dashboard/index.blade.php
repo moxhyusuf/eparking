@@ -362,6 +362,21 @@
             const allJukirR2 = @json($jukirR2);
             const allJukirR4 = @json($jukirR4);
 
+            // Mengurutkan nama jukir berdasarkan abjad A-Z
+            const urutanJukir = allJukirLabels
+           .map((nama, index) => ({
+            nama: nama,
+            r2: allJukirR2[index],
+            r4: allJukirR4[index]
+            }))
+            .sort((a, b) => a.nama.localeCompare(b.nama, 'id', {
+            sensitivity: 'base'
+            }));
+
+            const jukirLabelsAZ = urutanJukir.map(item => item.nama);
+            const jukirR2AZ = urutanJukir.map(item => item.r2);
+            const jukirR4AZ = urutanJukir.map(item => item.r4);
+
             function getEChartsOption() {
                 const chartH = Math.max(400, allJukirLabels.length * 28);
                 document.getElementById('chartPerJukir').style.height = chartH + 'px';
@@ -398,14 +413,14 @@
                         }
                     },
                     yAxis: {
-                        type: 'category',
-                        data: allJukirLabels,
-                        inverse: false,
-                        axisLabel: {
-                            fontSize: 11,
-                            width: 150,
-                            overflow: 'truncate'
-                        }
+                    type: 'category',
+                    data: jukirLabelsAZ,
+                    inverse: true,
+                    axisLabel: {
+                        fontSize: 11,
+                        width: 150,
+                        overflow: 'truncate'
+                    }
                     },
                     dataZoom: [{
                             type: 'slider',
@@ -424,28 +439,26 @@
                         }
                     ],
                     series: [{
-                            name: 'R2',
-                            type: 'bar',
-                            stack: 'total',
-                            data: allJukirR2,
-                            itemStyle: {
-                                color: 'rgba(13, 110, 253, 0.85)'
-                            },
-                            barMaxWidth: 20
-                        },
-                        {
-                            name: 'R4',
-                            type: 'bar',
-                            stack: 'total',
-                            data: allJukirR4,
-                            itemStyle: {
-                                color: 'rgba(220, 53, 69, 0.85)'
-                            },
-                            barMaxWidth: 20
-                        }
-                    ]
-                };
-            }
+                    name: 'R2',
+                    type: 'bar',
+                    stack: 'total',
+                    data: jukirR2AZ,
+                    itemStyle: {
+                        color: '#646b73' // Abu-abu muda
+                    },
+                    barMaxWidth: 20
+                    },
+                    {
+                    name: 'R4',
+                    type: 'bar',
+                    stack: 'total',
+                    data: jukirR4AZ,
+                    itemStyle: {
+                        color: '#2c2d2e' 
+                    },
+                    barMaxWidth: 20
+                    }
+                ]
 
             const eJukir = echarts.init(document.getElementById('chartPerJukir'));
             eJukir.setOption(getEChartsOption());
